@@ -1,0 +1,10 @@
+#report
+
+PID 1373
+COMM  /Applications/Vi
+PPID  1306 
+%CPU  1.9
+%MEM  5.7
+
+was using memory the most, 
+

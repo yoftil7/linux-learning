@@ -35,3 +35,7 @@
 
 ---
 
+Common mistake you learned (good lesson):
+
+mv * notes/ fails because notes includes itself
+→ professionals expect these errors and adjust.
