@@ -160,5 +160,187 @@ Conclusion:
 
 ---
 
-End of current networking notes.
+## Next section -- 
+
+# Linux Networking — Firewalls & Traffic Control (05-networking)
+
+## 1. What Is a Firewall?
+
+A **firewall** controls **which network traffic is allowed or denied**.
+
+Key distinction:
+
+* **Binding** decides *where* a service listens
+* **Firewall** decides *who* can reach it
+
+Even if a port is open and bound to `0.0.0.0`, a firewall can still block access.
+
+---
+
+## 2. Traffic Flow Model (Mental Model)
+
+Incoming packet flow:
+
+1. Packet reaches the machine
+2. Firewall evaluates rules
+3. If allowed → sent to listening port/process
+4. If denied → dropped or rejected
+
+No firewall rule = default behavior applies.
+
+---
+
+## 3. iptables / nftables (Low-Level Reality)
+
+Under the hood, Linux uses:
+
+* **nftables** (modern)
+* **iptables** (legacy, still common)
+
+Most admins do **not** manage these directly anymore.
+
+Instead, they use:
+
+* `ufw` (Ubuntu / Debian)
+* `firewalld` (RHEL / CentOS / Fedora)
+
+---
+
+## 4. UFW (Uncomplicated Firewall)
+
+UFW is a **frontend** to iptables/nftables.
+
+### Check status
+
+```
+ufw status
+```
+
+### Enable firewall
+
+```
+ufw enable
+```
+
+### Disable firewall
+
+```
+ufw disable
+```
+
+---
+
+## 5. Allowing and Blocking Ports
+
+### Allow a port (TCP)
+
+```
+ufw allow 22/tcp
+```
+
+### Allow a port (UDP)
+
+```
+ufw allow 53/udp
+```
+
+### Deny a port
+
+```
+ufw deny 9001
+```
+
+Rules are evaluated top-down.
+
+---
+
+## 6. Allow From Specific IP (Very Important)
+
+Example:
+
+```
+ufw allow from 192.168.1.10 to any port 22
+```
+
+Meaning:
+
+* Only that IP can SSH
+* Everyone else is blocked
+
+This is **real security**, not theater.
+
+---
+
+## 7. Firewall vs Binding (Critical Comparison)
+
+| Scenario                                      | Result                   |
+| --------------------------------------------- | ------------------------ |
+| Service bound to `127.0.0.1`                  | Not reachable externally |
+| Service bound to `0.0.0.0`, firewall blocks   | Not reachable            |
+| Service bound to `0.0.0.0`, firewall allows   | Reachable                |
+| Service bound to `127.0.0.1`, firewall allows | Still NOT reachable      |
+
+👉 Binding happens **before** firewall relevance.
+
+---
+
+## 8. Docker & Firewalls (Reality Check)
+
+Docker:
+
+* Automatically manipulates iptables
+* Can expose ports even if you forget
+
+Example:
+
+```
+docker run -p 8080:80 nginx
+```
+
+This:
+
+* Opens port 8080
+* Bypasses some UFW rules unless configured properly
+
+Rule:
+
+> Always verify with `ss -tulnp` after Docker changes.
+
+---
+
+## 9. Common Mistakes
+
+* Thinking “service running” = “publicly accessible”
+* Forgetting firewall exists
+* Exposing `0.0.0.0` without protection
+* Assuming cloud security groups = local firewall
+
+Defense is **layered**, not single-point.
+
+---
+
+## 10. Interview Triggers
+
+**Q:** Firewall vs binding?
+**A:** Binding controls listening interfaces; firewall controls traffic access.
+
+**Q:** Can a firewall protect a badly bound service?
+**A:** Yes, but correct binding reduces risk first.
+
+**Q:** Why bind databases to localhost?
+**A:** They are not meant to be accessed directly over the network.
+
+---
+
+## 11. Professional Rules of Thumb
+
+* Bind narrowly, firewall broadly
+* Default deny > allow explicitly
+* Verify exposure with `ss`, not assumptions
+* Firewalls are policy, binding is architecture
+* Docker changes rules — always recheck
+
+---
+
+End of firewall & traffic control notes.
 
