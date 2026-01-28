@@ -344,3 +344,70 @@ Defense is **layered**, not single-point.
 
 End of firewall & traffic control notes.
 
+
+
+# DNS Deep Dive — dig +trace (05-networking)
+
+## Purpose of `dig +trace`
+
+`dig +trace` performs DNS resolution manually, starting from the root servers, bypassing local recursive resolvers.
+
+It simulates how a recursive DNS resolver works.
+
+---
+
+## DNS Resolution Flow Observed
+
+1. **Root servers (.)**
+
+   * Do not know domain IPs
+   * Delegate to TLD servers
+   * Very high TTL
+
+2. **TLD servers (.com)**
+
+   * Do not know host IPs
+   * Delegate to authoritative servers
+   * Medium TTL
+
+3. **Authoritative servers (google.com)**
+
+   * Source of truth
+   * Return A / AAAA records
+   * Lower TTL for flexibility
+
+4. **Final Answer**
+
+   * IP address returned
+   * DNS resolution complete
+
+---
+
+## Key Concepts Reinforced
+
+* DNS is hierarchical and distributed
+* Delegation happens at every layer
+* Caching is controlled by TTL
+* Clients normally use recursive resolvers
+* `dig +trace` bypasses recursion for visibility
+
+---
+
+## Why This Matters
+
+* Debug DNS failures
+* Detect DNS hijacking
+* Understand CDN routing
+* Verify authoritative responses
+* Analyze TTL and caching behavior
+
+---
+
+## Professional Insight
+
+> Root and TLD servers never resolve hostnames — they only delegate.
+
+---
+
+End of DNS trace notes.
+
