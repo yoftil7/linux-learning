@@ -345,6 +345,126 @@ Defense is **layered**, not single-point.
 End of firewall & traffic control notes.
 
 
+# DNS — Full Resolution Model (05-networking)
+
+## What DNS Is
+
+DNS (Domain Name System) translates **human-readable names** into **IP addresses**.
+
+Example:
+
+```
+google.com → 8.8.8.8
+```
+
+DNS is **distributed, hierarchical, and cached**.
+
+---
+
+## DNS Components
+
+### 1. Stub Resolver
+
+* Runs on your machine
+* Sends DNS queries
+* Uses `/etc/resolv.conf`
+
+---
+
+### 2. Recursive Resolver
+
+* Usually ISP or public DNS (8.8.8.8, 1.1.1.1)
+* Performs full resolution on your behalf
+* Caches responses
+
+---
+
+### 3. Root Servers (.)
+
+* Top of DNS hierarchy
+* Know TLD servers
+* Never return IP addresses
+
+---
+
+### 4. TLD Servers (.com, .org, .net)
+
+* Know authoritative servers
+* Delegate responsibility
+
+---
+
+### 5. Authoritative Servers
+
+* Source of truth
+* Store A, AAAA, MX, CNAME records
+* Controlled by domain owner
+
+---
+
+## DNS Resolution Flow
+
+1. Client asks recursive resolver
+2. Resolver queries root servers
+3. Root delegates to TLD
+4. TLD delegates to authoritative server
+5. Authoritative server returns record
+6. Resolver caches and responds to client
+
+---
+
+## Common DNS Record Types
+
+* **A** → IPv4 address
+* **AAAA** → IPv6 address
+* **CNAME** → Alias
+* **MX** → Mail servers
+* **NS** → Name servers
+* **TXT** → Verification / metadata
+
+---
+
+## TTL (Time To Live)
+
+TTL controls:
+
+* How long records are cached
+* Load on DNS infrastructure
+* Speed of failover
+
+Low TTL = fast changes
+High TTL = efficiency & stability
+
+---
+
+## Why DNS Sometimes “Fails”
+
+* Resolver cache poisoning
+* Expired or misconfigured records
+* Authoritative server unreachable
+* Firewall blocking UDP/TCP 53
+* Geo-DNS inconsistencies
+
+---
+
+## Key Commands
+
+```
+dig google.com
+dig google.com +trace
+nslookup google.com
+```
+
+Each provides different visibility levels.
+
+---
+
+## Professional Insight
+
+> DNS is not a lookup — it is a **delegation system with caching and authority**.
+
+---
+
 
 # DNS Deep Dive — dig +trace (05-networking)
 
@@ -410,4 +530,91 @@ It simulates how a recursive DNS resolver works.
 ---
 
 End of DNS trace notes.
+
+
+# Traceroute — Path Discovery & TTL Mechanics (05-networking)
+
+## What Traceroute Does
+
+`traceroute` discovers the **network path** packets take from your machine to a destination.
+
+It works by manipulating the **TTL (Time To Live)** field in IP packets.
+
+---
+
+## Core Mechanism
+
+1. Traceroute sends packets with **TTL = 1**
+2. First router decrements TTL → reaches 0
+3. Router drops the packet and replies with:
+
+   * **ICMP Time Exceeded**
+4. Traceroute records that router’s IP
+5. TTL is incremented (2, 3, 4…) until destination is reached
+
+Each hop = one router along the path.
+
+---
+
+## Why `* * *` Appears
+
+A hop shows `* * *` when:
+
+* Router drops TTL-expired packets silently
+* ICMP replies are firewalled
+* Rate-limiting is applied
+* Router does not respond to probes
+
+This does **not** mean the path is broken.
+
+---
+
+## Traceroute Modes
+
+### Default (UDP-based)
+
+```
+traceroute google.com
+```
+
+* Sends UDP packets to high ports
+* Expects ICMP Time Exceeded
+* Often blocked by firewalls
+
+---
+
+### TCP-based (Real-world traffic)
+
+```
+traceroute -T -p 443 google.com
+```
+
+* Uses TCP SYN packets
+* Mimics HTTPS traffic
+* More likely to pass firewalls
+* Common in production debugging
+
+---
+
+## TTL Direction Clarification
+
+* TTL is decremented **on every hop**
+* TTL applies to **each packet independently**
+* ICMP replies are **new packets** with their own TTL
+* You only see TTL behavior via replies
+
+TTL decreases on **both forward and return paths**, but only replies are visible.
+
+---
+
+## Practical Insights
+
+* Traceroute shows **path**, not performance guarantees
+* Missing hops ≠ unreachable destination
+* Different protocols reveal different paths
+* TCP traceroute is closer to real application behavior
+
+---
+
+End of traceroute notes.
 
