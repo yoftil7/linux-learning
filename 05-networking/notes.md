@@ -618,3 +618,199 @@ TTL decreases on **both forward and return paths**, but only replies are visible
 
 End of traceroute notes.
 
+
+
+# Linux Networking — NAT & Port Translation
+
+## 1. The Problem NAT Solves
+
+Private IP addresses are **not routable on the public internet**.
+
+Private ranges:
+
+* `10.0.0.0/8`
+* `172.16.0.0/12`
+* `192.168.0.0/16`
+
+Routers on the internet **drop packets** with these source IPs.
+
+👉 **NAT exists to translate private IPs into a public IP** so traffic can leave the local network.
+
+---
+
+## 2. What NAT Really Is
+
+**NAT (Network Address Translation)** rewrites packet headers at the network edge.
+
+It may change:
+
+* Source IP
+* Destination IP
+* Source port
+* Destination port
+
+NAT is typically done by:
+
+* Home routers
+* Firewalls
+* ISP gateways
+* Cloud networking layers
+
+⚠️ NAT is **not encryption** and **not authentication**.
+
+---
+
+## 3. SNAT — Source Network Address Translation
+
+### Purpose
+
+Used for **outbound traffic** from private networks.
+
+### Packet Flow (Outbound)
+
+Before NAT:
+
+```
+192.168.1.10:54321 → 8.8.8.8:53
+```
+
+After NAT:
+
+```
+PUBLIC_IP:40001 → 8.8.8.8:53
+```
+
+The NAT device records this mapping in a **state table**.
+
+### Return Traffic
+
+```
+8.8.8.8:53 → PUBLIC_IP:40001
+```
+
+NAT translates it back to:
+
+```
+192.168.1.10:54321
+```
+
+✅ This is how private machines access the internet.
+
+---
+
+## 4. PAT — Port Address Translation (Most Common)
+
+PAT allows **many private hosts** to share **one public IP**.
+
+Example NAT table:
+
+| Private IP   | Private Port | Public IP | Public Port |
+| ------------ | ------------ | --------- | ----------- |
+| 192.168.1.10 | 54321        | 41.x.x.x  | 40001       |
+| 192.168.1.11 | 54322        | 41.x.x.x  | 40002       |
+| 192.168.1.12 | 54323        | 41.x.x.x  | 40003       |
+
+👉 PAT is why millions of users can exist behind a single public IP.
+
+---
+
+## 5. DNAT — Destination Network Address Translation
+
+### Purpose
+
+Used for **inbound traffic** from the internet to private hosts.
+
+Example:
+
+```
+PUBLIC_IP:80 → 192.168.1.20:80
+```
+
+Common uses:
+
+* Port forwarding
+* Hosting services behind NAT
+* Load balancers
+
+Also referred to as:
+
+* Static NAT (in some contexts)
+
+---
+
+## 6. NAT Is Stateful (Critical)
+
+NAT keeps a **connection tracking table**.
+
+This means:
+
+* Return traffic is automatically allowed
+* Unsolicited inbound traffic is dropped
+
+This provides **basic protection**, but:
+
+⚠️ **NAT is not a firewall** — it only tracks connections.
+
+---
+
+## 7. Why Private IPs “Work” on the Internet
+
+Private IPs never reach the internet.
+
+Only the **translated public IP** is visible externally.
+
+From the internet’s point of view:
+
+* Your entire LAN looks like **one machine**
+* Internal addressing is hidden
+
+---
+
+## 8. NAT in Containers & Virtualization
+
+Docker and VMs commonly use NAT.
+
+Example Docker flow:
+
+```
+Container (172.17.0.x)
+→ Docker bridge (172.17.0.1)
+→ Host NAT
+→ Internet
+```
+
+This causes:
+
+* Extra hops in traceroute
+* ICMP oddities
+* Restricted firewall visibility inside containers
+
+---
+
+## 9. Real-World Debugging Order (NAT Issues)
+
+When connectivity fails:
+
+1. Check local IP (`ip a`)
+2. Check default route (`ip route`)
+3. Check NAT gateway
+4. Check DNS resolution
+5. Check firewall rules
+6. Check upstream ISP NAT
+
+Most failures occur at **NAT or DNS**, not applications.
+
+---
+
+## 10. Key Mental Model
+
+> NAT rewrites **addresses**
+> PAT rewrites **addresses + ports**
+> The internet only sees the **public side**
+
+Everything else is abstraction.
+
+---
+
+End of NAT & Port Translation notes.
+
